@@ -1,70 +1,68 @@
-var F = 0;
-var C = 1;
-var S = 2;
-var W = 3;
 
+/* Golbal graph. */
 var open = [];
-var mLeft = [1,1,1,1];
+
+/* Initial state. */
+var initialState = [1,1,1,1];
+
+/* While loop is running. (Graph Generation) */
 var running = true;
 
+/* Function for graph generation. */
 var solve = function()
 {
-	open.unshift(mLeft);
-
-	var over = 60;
+	/* Add initial state. */
+	open.unshift(initialState);
+	var over = 60; // Overflow controll.
 
 	do
 	{
-		getMoves();
+		getMoves(); //Get newest nodes.
 
 		if((--over) == 0){
 			console.log("overflow");
 			break;
 		}
-
-		console.log(running);
 	}
 	while(running);
 
+	/* Reverse the graph. */
 	open.reverse();
-
-	//steps();
 };
 
-var gambi = false;
+/* Graph generator. */
+var isOdd = false;
 var getMoves = function()
 {
 	if(open.length == 1)
 	{
 		var m = open[0];
-		fuckit(m);
+		nextPossibleMove(m);
 	}
-	else if(gambi)
+	else if(isOdd)
 	{
 		var ms = [open[0].slice(), open[1].slice(), open[2].slice()];
 		ms.forEach(function(v){
-			fuckit(v);
+			nextPossibleMove(v);
 		});
 
-		gambi = false;
+		isOdd = false;
 	}
-	else if(!gambi)
+	else if(!isOdd)
 	{
 		var ms = [open[0].slice(), open[1].slice(), open[2].slice()];
 		ms.forEach(function(v){
 			var temp = v.slice();
 			temp[0] = 1;
-			// open.unshift(temp);
 			addToOpen(temp);
 		});
 
-		gambi = true;
+		isOdd = true;
 	}
-
-	// console.log(open);
 };
 
-var fuckit = function(m)
+/* Possible states retriver. */
+var nextPossibleMove = function(m)
 {
 	for(var i=1; i < 4; i++)
 	{
@@ -73,53 +71,82 @@ var fuckit = function(m)
 		temp[i] = 0;
 		temp[0] = 0;
 
-		// open.unshift(temp);
 		addToOpen(temp);
 
 		if(equals(temp, [0,0,0,0])){
-			console.log("FINAL ENCONTRADO!");
 			running = false;
 		}
 	}
 };
 
-var steps = function()
+/* Busca por Amplitude is here. BRBRBR */
+var buscaAmplitude = function(graph = open){
+	return search(graph, function(arr){
+		return arr.pop();
+	});
+};
+
+/* Busca por Profundidade is here. BRBRBR */
+var buscaProfundidade = function(graph = open){
+	return search(graph, function(arr){
+		return arr.shift();
+	});
+};
+
+/**
+  * Search functions for "Amplitude" and "Profundidade".
+  * Args @graph : array of nodes.
+  *      @_remove : function for get nodes a.k.a. shift and pop.
+  *      @_add : function for add nodes a.k.a. unshift and push.
+  * Return true if meta node was found;
+  *        false if meta node not found;
+  */
+var search = function(graph, _remove, _add)
 {
-	var path = [];
-	var list = open.slice();
-	var temp = [];
-	var visited = [];
-	var queue = [];
+	var graph = graph.slice();
+	var opened = [];
+	var closed = [];
 
-	var s = list.shift();
-	queue.unshift(s);
-	visited.push(s);
+	/* Add first node to open. */
+	opened.push(graph.shift());
 
-	var i = [];
-	while(queue.length > 0)
+	/* While array of opens has items. */
+	while(opened.length != 0)
 	{
-		s = queue.shift();
+		var x = _remove(opened); //most left node.
 
-		i = adjacentNodes(s);
+		/* Stop if current state is meta. */
+		if(equals(x, [0,0,0,0]))
+		{
+			closed.push(x);
+			console.log("[END]", "META FOO", [0,0,0,0]);
+			console.log("STEPS > "+closed.length, closed);
+			return true;
+		}
 
-		i.every(function(v){
-			if(equals(v, [0,0,0,0])){
-				console.log("FIM");
-				return false;
-			}
+		/* Get x's child. */
+		var xchildren = adjacentNodes(x);
+		closed.push(x); // Close the current node.
 
-			if(!contains(visited, v)){
-				visited.push(v);
-				queue.unshift(v);
+		/* Add each node to opened array. */
+		xchildren.forEach(function(node){
+			if(!contains(closed, node)){
+				opened.unshift(node);
 			}
 		});
 
-		path.push(s);
+		console.log(x, xchildren);
 	}
 
-	console.log(path);
+	console.log(closed);
+	return false;
 };
 
+/**
+  * Get all adjacent nodes.
+  * Args @node : array of nodes.
+  * Return @array adjacent nodes. 
+  */
 function adjacentNodes(node)
 {
 	var adjs = [];
@@ -139,21 +166,21 @@ function adjacentNodes(node)
 		adjs.push(open[7], open[8]);
 	}
 	else if(equals(node, [1,1,0,1])){
-		adjs.push(open[9], open[10]);
+		adjs.push(open[7], open[9]);
 	}
 	else if(equals(node, [1,1,1,0])){
-		adjs.push(open[7], open[9]);
+		adjs.push(open[8], open[9]);
 	}
 
 	// col 4
 	else if(equals(node, [0,0,1,0])){
-		adjs.push(open[10]);
+		adjs.push(open[11]);
 	}
 	else if(equals(node, [0,0,0,1])){
-		adjs.push(open[4], open[5]);
+		adjs.push(open[5], open[6]);
 	}
 	else if(equals(node, [0,1,0,0])){
-		adjs.push(open[5], open[6]);
+		adjs.push(open[5], open[4]);
 	}
 
 	// col 5
@@ -164,25 +191,24 @@ function adjacentNodes(node)
 	return adjs;
 }
 
-function isNodeFree(node)
-{
-	
-
-	return true;
-}
-
+/* If two nodes are equal. */
 function equals(a1, a2){
 	return a1.length==a2.length && a1.every(function(v,i) { return v === a2[i]});
 }
 
+/* If array a1 include node a2. */
 function contains(a1, a2){
 	return !a1.every(function(v){
 		return !equals(v, a2);
 	});
 }
 
+/* Add to graph is node doesn't exist. */
 function addToOpen(node){
 	if(!contains(open, node)){
 		open.unshift(node);
 	}
 }
+
+/* When page finish loading, create graph. */
+window.addEventListener("load", solve);
